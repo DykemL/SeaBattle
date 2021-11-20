@@ -57,6 +57,6 @@ class Vector {
     }
 
     static isValidPoint(vector) {
-        return (vector.x >= 0 && vector.y >= 0 && vector.x <= FieldSize - 1 && vector.y <= FieldSize - 1)
+        return (vector.x >= 0 && vector.y >= 0 && vector.x <= CellsCount - 1 && vector.y <= CellsCount - 1)
     }
 }

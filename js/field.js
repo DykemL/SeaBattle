@@ -5,9 +5,10 @@ class Field {
     startPadding;
 
     alignment;
-    field;
     ships;
-    pointsField;
+    field;
+    realField;
+    effectsField;
 
     constructor(x, y, alignment) {
         this.image = Images['field'];
@@ -22,35 +23,64 @@ class Field {
         this._initRandom();
     }
 
-    draw() {
+    drawAll() {
+        this.drawField();
+        this.drawShips();
+        this.drawEffects();
+    }
+
+    drawField() {
         Ctx.drawImage(this.image, this.x, this.y);
     }
 
-    drawShips() {
+    drawShips(isDebug = false) {
         for (let ship of this.ships) {
-            let placementCoords = this._toPlacementCoords(ship.a, ship.b);
-            ship.draw(placementCoords.x, placementCoords.y);
+            if (!ship.isAlive && !isDebug) {
+                let placementCoords = this._toPlacementCoords(ship.a, ship.b);
+                ship.draw(placementCoords.x, placementCoords.y);
+            }
+        }
+    }
+
+    drawEffects() {
+        for (let i = 0; i < CellsCount; i++) {
+            for (let j = 0; j < CellsCount; j++) {
+                if (this.realField[i][j] == CellStatus.Attacked) {
+                    let placementCoords = this._toPlacementCoords(i, j);
+                    Ctx.drawImage(Images['explosion'], placementCoords.x, placementCoords.y);
+                }
+            }
         }
     }
 
     isIntersect(x, y) {
-        let isXIntersect = x - this.x >= 0 && this.x + (CellSize) * FieldSize - x >= 0;
-        let isYIntersect = y - this.y >= 0 && this.y + (CellSize) * FieldSize - y >= 0;
+        let isXIntersect = x - this.x >= 0 && this.x + (CellSize - 1) * (CellsCount + 1) - x >= 0;
+        let isYIntersect = y - this.y >= 0 && this.y + (CellSize - 1) * (CellsCount + 1) - y >= 0;
         return isXIntersect && isYIntersect;
     }
 
     receiveAttack(x, y) {
-        let localCoords = this._toFieldCoords(x, y);
-        let placementCoords = this._toPlacementCoords(localCoords.x, localCoords.y);
-        Ctx.drawImage(Images['explosion'], placementCoords.x, placementCoords.y);
+        let fieldCoords = this._toFieldCoords(x, y);
+        let attackedCell = this.realField[fieldCoords.x][fieldCoords.y];
+        if (typeof attackedCell == 'object') {
+            let ship = attackedCell;
+            ship.damage();
+            this.realField[fieldCoords.x][fieldCoords.y] = CellStatus.Attacked;
+            return true;
+        }
+        if (attackedCell == CellStatus.Empty) {
+            this.realField[fieldCoords.x][fieldCoords.y] = CellStatus.Attacked;
+            return true;
+        }
+        return false;
     }
 
     _toFieldCoords(x, y) {
-        let spacing = CellSize - 1;
+        let spacing = CellSize;
         let xOffset = x - this.x - spacing;
         let yOffset = y - this.y - spacing;
-        let aCoord = (xOffset - (xOffset % spacing)) / spacing;
-        let bCoord = (yOffset - (yOffset % spacing)) / spacing;
+        let aCoord = Math.floor(xOffset / (spacing - 1));
+        let bCoord = Math.floor(yOffset / (spacing - 1));
         return new Vector(aCoord, bCoord);
     }
 
@@ -59,27 +89,33 @@ class Field {
     }
 
     _clearField() {
-        this.field = new Array(FieldSize);
-        for (let i = 0; i < FieldSize; i++) {
-            this.field[i] = new Array(FieldSize);
+        this.field = new Array(CellsCount);
+        for (let i = 0; i < CellsCount; i++) {
+            this.field[i] = new Array(CellsCount);
         }
+        this.realField = new Array(CellsCount);
+        for (let i = 0; i < CellsCount; i++) {
+            this.realField[i] = new Array(CellsCount);
+        }
+    }
 
-        this.pointsField = new Array(FieldSize);
-        for (let i = 0; i < FieldSize; i++) {
-            this.pointsField[i] = new Array(FieldSize);
+    _clearEffects() {
+        this.effectsField = new Array(CellsCount);
+        for (let i = 0; i < CellsCount; i++) {
+            this.effectsField[i] = new Array(CellsCount);
         }
     }
 
     _updatePointsField() {
-        let pointsField = this.pointsField;
+        let pointsField = this.realField;
         function calculateShip(i, j, ship, vector) {
             let points = Vector.getPointsTo(new Vector(i, j), vector);
             for (let point of points) {
                 pointsField[point.x][point.y] = ship;
             }
         }
-        for (let i = 0; i < FieldSize; i++) {
-            for (let j = 0; j < FieldSize; j++) {
+        for (let i = 0; i < CellsCount; i++) {
+            for (let j = 0; j < CellsCount; j++) {
                 if (this.field[i][j] != undefined) {
                     let ship = this.field[i][j];
                     let directionVector = toVector(ship.direction, ship.size);
@@ -100,12 +136,11 @@ class Field {
             ship.direction = getRandomDirection();
             let validPoints = this._getAvailablePoints(ship);
             if (validPoints.length == 0) {
-                console.log("Нет свободных полей");
                 this._clearField();
                 this._initRandom();
                 return;
             }
-            let randomPointIndex = getRandomInRange(0, validPoints.length - 1);
+            let randomPointIndex = Utils.getRandomInRange(0, validPoints.length - 1);
             let randomValidPoint = validPoints[randomPointIndex];
             let a = randomValidPoint.x;
             let b = randomValidPoint.y;
@@ -117,12 +152,12 @@ class Field {
     }
 
     _getAvailablePoints(ship) {
-        let pointsField = this.pointsField;
+        let realField = this.realField;
         function checkCoord(i, j) {
             if (!Vector.isValidPoint(new Vector(i, j))) {
                 return true;
             }
-            return pointsField[i][j] == undefined;
+            return realField[i][j] == undefined;
         }
         function checkAround(i, j) {
             return checkCoord(i - 1, j) && checkCoord(i - 1, j - 1) && checkCoord(i, j - 1) && checkCoord(i + 1, j - 1)
@@ -135,7 +170,7 @@ class Field {
                 if (!Vector.isValidPoint(point)) {
                     return false;
                 }
-                let currentPointIsValid = pointsField[point.x][point.y] == undefined;
+                let currentPointIsValid = realField[point.x][point.y] == undefined;
                 let aroundIsValid = checkAround(point.x, point.y)
                 if (!currentPointIsValid || !aroundIsValid) {
                     return false;
@@ -144,8 +179,8 @@ class Field {
             return true;
         }
         let points = []
-        for (let i = 0; i < FieldSize; i++) {
-            for (let j = 0; j < FieldSize; j++) {
+        for (let i = 0; i < CellsCount; i++) {
+            for (let j = 0; j < CellsCount; j++) {
                 if (checkForShipPlacement(i, j)){
                     points.push(new Vector(i, j));
                 }
@@ -154,3 +189,5 @@ class Field {
         return points;
     }
 }
+
+const CellStatus = {Empty: undefined, Attacked: 1}

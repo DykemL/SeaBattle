@@ -6,12 +6,14 @@ class Ship {
     b;
     direction;
     alignment;
+    health;
     
     isAlive;
 
     constructor(image, size, alignment) {
         this.image = image;
         this.size = size;
+        this.health = size;
         this.alignment = alignment;
         this.direction = Direction.Top;
         this.isAlive = true;
@@ -25,6 +27,13 @@ class Ship {
         Ctx.drawImage(this.image, -CellSize / 2 + 1, -CellSize / 2 + 1);
         Ctx.restore();
     }
+
+    damage() {
+        this.health--;
+        if (this.health == 0) {
+            this.isAlive = false;
+        }
+    }
 }
 
 const Alignment = {Blue: 0, Red: 1};
@@ -32,7 +41,7 @@ const Alignment = {Blue: 0, Red: 1};
 const Direction = {Right: 0, Top: 1, Left: 2, Bottom: 3};
 
 function getRandomDirection() {
-    let number = getRandomInRange(0, 3);
+    let number = Utils.getRandomInRange(0, 3);
     switch (number) {
         case 0: return Direction.Top;
         case 1: return Direction.Right;
