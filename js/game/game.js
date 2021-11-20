@@ -53,8 +53,8 @@ class Game {
             }
             let x = event.pageX;
             let y = event.pageY;
-            let attackStatus = AttackStatus.Invalid;
             let currentField;
+            let attackStatus = AttackStatus.Invalid;
             if (this.currentPlayerTurn == Player.Blue) {
                 currentField = this.fieldRed;
                 attackStatus = this.move(this.fieldRed, x, y);
@@ -69,13 +69,7 @@ class Game {
             }
             
             if (!this._isFieldAlive(currentField)) {
-                let gameOverText;
-                if (this.currentPlayerTurn == Player.Blue) {
-                    gameOverText = "Победил синий игрок";
-                } 
-                else {
-                    gameOverText = "Победил красный игрок";
-                }
+                let gameOverText = this.currentPlayerTurn == Player.Blue ? "Победил синий игрок" : "Победил красный игрок";
                 Utils.SwitchGraphicsToGameOver(gameOverText);
                 this.isGameOver = true;
             }
@@ -84,23 +78,24 @@ class Game {
             }
             this.update();
         };
+        document.getElementById("mainMenuLink").onclick = () => {
+            let playerNameInput = document.getElementById("playerNameInput");
+            let playerName = playerNameInput.value;
+            if (playerName == undefined || playerName == '') {
+                playerName = "Игрок";
+            }
+            let health = this.currentPlayerTurn == Player.Blue ? this.fieldBlue.countHealth() : this.fieldRed.countHealth();
+            LeaderboardUtils.writeToLeaderboard(playerName, health);
+        }
     }
 
     _switchMove() {
-        if (this.currentPlayerTurn == Player.Blue) {
-            this.currentPlayerTurn = Player.Red;
-        }
-        else {
-            this.currentPlayerTurn = Player.Blue;
-        }
+        this.currentPlayerTurn = this.currentPlayerTurn == Player.Blue ? Player.Red: Player.Blue;
     }
 
     _isFieldAlive(field) {
         let aliveShips = field.ships.filter(ship => ship.isAlive);
-        if (aliveShips.length == 0) {
-            return false;
-        }
-        return true;
+        return aliveShips.length != 0;
     }
 }
 

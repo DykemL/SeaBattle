@@ -192,6 +192,12 @@ class Field {
         }
         return points;
     }
+
+    countHealth() {
+        let totalHealth = 0;
+        this.ships.filter(ship => ship.isAlive).map(ship => totalHealth += ship.health);
+        return totalHealth;
+    }
 }
 
 const CellStatus = {Empty: undefined, Missed: 1, Attacked: 2}
