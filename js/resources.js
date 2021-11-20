@@ -14,6 +14,10 @@ let imageStrings = {
     "ship2Red": "images/ships/ship2Red.png",
     "ship3Red": "images/ships/ship3Red.png",
     "ship4Red": "images/ships/ship4Red.png",
+
+    "blueArrow": "images/blueArrow.png",
+    "redArrow": "images/redArrow.png",
+    "missed": "images/missed.png",
     "explosion": "images/explosion.png",
 }
 

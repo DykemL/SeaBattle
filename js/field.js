@@ -25,7 +25,7 @@ class Field {
 
     drawAll() {
         this.drawField();
-        this.drawShips();
+        this.drawShips(GlobalGame.isDebugMode);
         this.drawEffects();
     }
 
@@ -35,7 +35,7 @@ class Field {
 
     drawShips(isDebug = false) {
         for (let ship of this.ships) {
-            if (!ship.isAlive && !isDebug) {
+            if (!ship.isAlive || isDebug) {
                 let placementCoords = this._toPlacementCoords(ship.a, ship.b);
                 ship.draw(placementCoords.x, placementCoords.y);
             }
@@ -48,6 +48,10 @@ class Field {
                 if (this.realField[i][j] == CellStatus.Attacked) {
                     let placementCoords = this._toPlacementCoords(i, j);
                     Ctx.drawImage(Images['explosion'], placementCoords.x, placementCoords.y);
+                }
+                else if (this.realField[i][j] == CellStatus.Missed) {
+                    let placementCoords = this._toPlacementCoords(i, j);
+                    Ctx.drawImage(Images['missed'], placementCoords.x, placementCoords.y);
                 }
             }
         }
@@ -66,13 +70,13 @@ class Field {
             let ship = attackedCell;
             ship.damage();
             this.realField[fieldCoords.x][fieldCoords.y] = CellStatus.Attacked;
-            return true;
+            return AttackStatus.Attacked;
         }
         if (attackedCell == CellStatus.Empty) {
-            this.realField[fieldCoords.x][fieldCoords.y] = CellStatus.Attacked;
-            return true;
+            this.realField[fieldCoords.x][fieldCoords.y] = CellStatus.Missed;
+            return AttackStatus.Missed;
         }
-        return false;
+        return AttackStatus.Invalid;
     }
 
     _toFieldCoords(x, y) {
@@ -106,7 +110,7 @@ class Field {
         }
     }
 
-    _updatePointsField() {
+    updatePointsField() {
         let pointsField = this.realField;
         function calculateShip(i, j, ship, vector) {
             let points = Vector.getPointsTo(new Vector(i, j), vector);
@@ -147,7 +151,7 @@ class Field {
             ship.a = a;
             ship.b = b;
             this.field[ship.a][ship.b] = ship;
-            this._updatePointsField();
+            this.updatePointsField();
         }
     }
 
@@ -190,4 +194,5 @@ class Field {
     }
 }
 
-const CellStatus = {Empty: undefined, Attacked: 1}
+const CellStatus = {Empty: undefined, Missed: 1, Attacked: 2}
+const AttackStatus = {Invalid: 0, Missed: 1, Attacked: 2,}

@@ -27,7 +27,6 @@ function main() {
 	resize();
 
 	ShipFactory.init();
-	let game = new Game();
-	game.inititalizeGame();
-
+	GlobalGame = new Game();
+	GlobalGame.inititalizeGame();
 }

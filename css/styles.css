@@ -17,8 +17,6 @@ body {
 .canvas {
     z-index: 0;
     position: fixed;
-    height: 969px;
-    width: 1920px;
 }
 
 .unactive {

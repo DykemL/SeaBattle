@@ -1,29 +1,40 @@
 class Game {
+    isDebugMode = false;
+
     fieldBlue;
     fieldRed;
 
     currentPlayerTurn;
     isGameOver;
 
+    arrow;
+
     constructor() {
         this.currentPlayerTurn = Player.Blue;
         this.isGameOver = false;
+        let marginLeft = FieldMarginSide + CellsCount * (CellSize + 1) + 55;
+        let marginTop = 300;
+        this.arrow = new Arrow(marginLeft, marginTop, 150, 50);
     }
 
     move(field, x, y) {
         if (!field.isIntersect(x, y)) {
-            return false;
+            return AttackStatus.Invalid;
         }
-        if (!field.receiveAttack(x, y)) {
-            return false;
-        }
-        return true;
+        return field.receiveAttack(x, y)
     }
 
     inititalizeGame() {
         this._initializeFields();
-        this._drawFields();
         this._initializeEvents();
+        this.update();
+    }
+
+    update() {
+        Ctx.clearRect(0, 0, 1920, 969);
+        this.fieldBlue.drawAll();
+        this.fieldRed.drawAll();
+        this.arrow.draw(this.currentPlayerTurn);
     }
 
     _initializeFields() {
@@ -31,13 +42,8 @@ class Game {
         this.fieldRed = new Field(Canvas.width - FieldMarginSide - Images['field'].width, FieldMarginTop, Alignment.Red);
         this.fieldBlue.initialize();
         this.fieldRed.initialize();
-        this._drawFields([this.fieldBlue, this.fieldRed]);
+        this.update();
         return [this.fieldBlue, this.fieldRed];
-    }
-
-    _drawFields() {
-        this.fieldBlue.drawAll();
-        this.fieldRed.drawAll();
     }
 
     _initializeEvents() {
@@ -47,21 +53,21 @@ class Game {
             }
             let x = event.pageX;
             let y = event.pageY;
-            let moveResult = false;
+            let attackStatus = AttackStatus.Invalid;
             let currentField;
             if (this.currentPlayerTurn == Player.Blue) {
                 currentField = this.fieldRed;
-                moveResult = this.move(this.fieldRed, x, y);
+                attackStatus = this.move(this.fieldRed, x, y);
             }
             else {
                 currentField = this.fieldBlue;
-                moveResult = this.move(this.fieldBlue, x, y);
+                attackStatus = this.move(this.fieldBlue, x, y);
             }
     
-            if (!moveResult) {
+            if (attackStatus == AttackStatus.Invalid) {
                 return;
             }
-            currentField.drawAll();
+            
             if (!this._isFieldAlive(currentField)) {
                 let gameOverText;
                 if (this.currentPlayerTurn == Player.Blue) {
@@ -72,9 +78,11 @@ class Game {
                 }
                 Utils.SwitchGraphicsToGameOver(gameOverText);
                 this.isGameOver = true;
-                return;
             }
-            this._switchMove();
+            if (attackStatus != AttackStatus.Attacked) {
+                this._switchMove();
+            }
+            this.update();
         };
     }
 
